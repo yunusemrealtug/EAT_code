@@ -46,7 +46,7 @@ expmean = torch.from_numpy(np.load('./expPCAnorm_fin/mean_mead.npy'))
 
 root_wav = './demo/video_processed/M003_neu_1_001'
 
-# MODNet'i yükleme
+
 def load_modnet(ckpt_path):
     modnet = MODNet(backbone_pretrained=False)
     modnet = torch.nn.DataParallel(modnet)
@@ -55,7 +55,7 @@ def load_modnet(ckpt_path):
     modnet.eval()
     return modnet
 
-# Görüntüyü ön işleme
+
 def preprocess_image(image, ref_size=512):
     im_transform = transforms.Compose(
         [
@@ -91,7 +91,7 @@ def preprocess_image(image, ref_size=512):
     im = F.interpolate(im, size=(im_rh, im_rw), mode='area')
     return im, original_size
 
-# Yüzü arka plandan ayırma
+
 def extract_face(modnet, image):
     im, original_size = preprocess_image(image)
     _, _, matte = modnet(im, True)
@@ -99,7 +99,7 @@ def extract_face(modnet, image):
     matte = matte[0][0].data.cpu().numpy()
     return matte
 
-# Kareleri işleme ve birleştirme
+
 def process_frame(modnet, frame, background_color):
     face_matte = extract_face(modnet, frame)
     face_matte = face_matte[..., None]
@@ -110,7 +110,7 @@ def process_frame(modnet, frame, background_color):
     final_frame = face * face_matte + background * (1 - face_matte)
     return final_frame.astype(np.uint8)
 
-# Video işleme
+
 def process_video(input_video_path, output_video_path, modnet, background_color):
     cap = cv2.VideoCapture(input_video_path)
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
@@ -171,31 +171,24 @@ def process_frames(modnet):
         img = Image.open(img_path)
         matte = extract_face(modnet, img)
         
-        # Convert image and matte to numpy arrays
+       
         img_np = np.array(img)
         matte_np = np.array(matte)
         
-        # Ensure matte has the same number of dimensions as img
         if matte_np.ndim == 2:
             matte_np = matte_np[:, :, np.newaxis]
         
-        # Repeat the matte array to match the number of color channels in img
         matte_np = np.repeat(matte_np, 3, axis=2)
         
-        # Perform the blending
         segmented_img_np = img_np * matte_np + (1 - matte_np) * background_color
         
-        # Convert the resulting numpy array back to an image
         segmented_img = Image.fromarray(segmented_img_np.astype('uint8'))
         
-        # Save the segmented image as PNG
         segmented_img.save(output_path)
         
-        # Save the matte mask as a PNG image
         mask_img = Image.fromarray((matte_np[:, :, 0] * 255).astype('uint8'))
         mask_img.save(mask_path)
 
-        # Save a copy of the original cropped image as a PNG in the masks directory
         img.save(cropped_copy_path)
 
     print("Segmentation completed and saved to './demo/imgs_segmented/'")
@@ -204,7 +197,6 @@ def process_frames(modnet):
 
 
 
-# Ortalama arka plan rengini hesaplama
 """def calculate_background_color(video_path, num_frames=30):
     cap = cv2.VideoCapture(video_path)
     frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
@@ -546,7 +538,7 @@ def test(ckpt, emotype, save_dir=" "):
     indir = os.path.join(os.getcwd(), 'demo/masks')
     outdir = os.path.join(os.getcwd(), 'demo/backgrounds')
 
-    # Komutu oluştur
+    
     command = [
         'python3',
         script_path,
@@ -555,15 +547,15 @@ def test(ckpt, emotype, save_dir=" "):
         f'outdir={outdir}'
     ]
 
-    # Komutu çalıştır
+    
     result = subprocess.run(command, capture_output=True, text=True)
 
-    # Çıktıları yazdır
+    
     print("stdout:", result.stdout)
     print("stderr:", result.stderr)
         
 
-    # İlk programın çıktısını kontrol edin veya hata var mı diye kontrol edebilirsiniz
+
     
 
     allimg_cropped = glob.glob('./demo/imgs_segmented/*.jpg')
